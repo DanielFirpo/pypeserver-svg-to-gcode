@@ -53,7 +53,7 @@ if (form) {
     const svgRotation = parseFloat(svgRotationInput.value);
 
     if (!svgFile) {
-      const response = await fetch('/SVMLogo.svg');
+      const response = await fetch('/pypeserver-svg-to-gcode/SVMLogo.svg');
       const blob = await response.blob();
       svgFile = new File([blob], 'default.svg', { type: 'image/svg+xml' });
     }
