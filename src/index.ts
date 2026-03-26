@@ -7,25 +7,20 @@ const button = document.getElementById('customText') as HTMLButtonElement;
 const fileNameText = document.getElementById('selectedFileName') as HTMLSpanElement;
 const previewImg = document.querySelector('img') as HTMLImageElement;
 
-// Trigger file picker when button is clicked
 button.addEventListener('click', () => {
   svgInput.click();
 });
 
-// Update UI when file is selected
 svgInput.addEventListener('change', () => {
   const file = svgInput.files?.[0];
 
   if (!file) return;
 
-  // Update filename text
   fileNameText.textContent = file.name;
 
-  // Update preview
   const url = URL.createObjectURL(file);
   previewImg.src = url;
 
-  // Optional: clean up old object URLs later
   previewImg.onload = () => {
     URL.revokeObjectURL(url);
   };
@@ -58,7 +53,7 @@ if (form) {
     const svgRotation = parseFloat(svgRotationInput.value);
 
     if (!svgFile) {
-      const response = await fetch('/src/assets/SVMLogo.svg');
+      const response = await fetch('/SVMLogo.svg');
       const blob = await response.blob();
       svgFile = new File([blob], 'default.svg', { type: 'image/svg+xml' });
     }
