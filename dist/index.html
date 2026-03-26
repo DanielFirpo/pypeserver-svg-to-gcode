@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SVG to Pypeserver G-Code</title>
+  <script type="module" crossorigin src="/assets/index-B8sWFdt-.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index-CKkoyUZF.css">
+</head>
+
+<body>
+  <h1>SVG to Pypeserver G-Code Tool</h1>
+  <form id="pipeForm">
+    <div style="display: flex; width: 400px; align-items: center; gap: 10px; margin-bottom: 60px; flex-wrap: wrap;">
+      <label style="width: fit-content;" for="svgFile">SVG File:</label>
+      <button type="button" id="customText" style="width: fit-content; margin-top: 0; white-space: nowrap;">Select a
+        file</button>
+      <input type="file" id="svgFile" name="svgFile" accept=".svg"
+        style="opacity: 0; position: absolute; cursor: pointer; width: fit-content;" />
+
+      <span style="width: fit-content; font-weight: 400" for="svgFile" id="selectedFileName">SVMLogo.svg</span>
+      <img style="max-width: 200px; height: auto;" src="./SVMLogo.svg"></img>
+    </div>
+
+    <div class="row">
+      <div>
+        <label for="pipeOD">Pipe OD:</label>
+        <input type="number" id="pipeOD" name="pipeOD" min="0" step="any" placeholder="e.g., 2.5" value="12.75"
+          required />
+      </div>
+
+      <div>
+        <label for="xStart">Y Start (inches):</label>
+        <input type="number" id="xStart" name="xStart" step="any" placeholder="e.g., 12.75" required value="0" />
+      </div>
+    </div>
+
+    <div class="row">
+      <div>
+        <label for="svgScale">SVG Scaling:</label>
+        <input type="number" id="svgScale" name="svgScale" min=".01" step="any" placeholder="1.5" required value="15" />
+
+      </div>
+      <div>
+        <label for="rotation">X Rotation (0-360°):</label>
+        <input type="number" id="rotation" name="rotation" min="0" max="360" step="any" placeholder="e.g., 90" required
+          value="0" />
+      </div>
+    </div>
+
+    <div class="row">
+      <div>
+        <label for="samplingResolution">Sampling Resolution:</label>
+        <input type="number" id="samplingResolution" name="samplingResolution" min=".01" step="any" placeholder="0.1"
+          required value="0.1" />
+      </div>
+
+      <div>
+        <label for="svgRotation">SVG Rotation (0-360°):</label>
+        <input type="number" id="svgRotation" name="svgRotation" min="0" max="360" step="any" placeholder="e.g., 90"
+          required value="0" />
+      </div>
+    </div>
+    <button type="submit" style="width: 200px; padding: 1rem; font-size: 1.2rem; font-weight: bold">Generate</button>
+  </form>
+  <div id="output">
+    <textarea id="gcode-output"></textarea>
+    <div id="pipe-preview"></div>
+  </div>
+
+</body>
+
+</html>
