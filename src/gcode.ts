@@ -59,8 +59,10 @@ function normalizePoints(paths: Point[][], svgScale: number): Point[][] {
     if (paths.length === 0) return [];
 
     const flat = paths.flat();
-    let minX = Infinity, minY = Infinity;
-    let maxX = -Infinity, maxY = -Infinity;
+    let minX = Infinity,
+        minY = Infinity;
+    let maxX = -Infinity,
+        maxY = -Infinity;
 
     for (const { x, y } of flat) {
         if (x < minX) minX = x;
@@ -110,14 +112,8 @@ function resamplePath(path: Point[], stepSize: number): Point[] {
     return result;
 }
 
-
 //Convert 2D points to 3D vectors pointing from the center of the pipe outwards to the OD
-function svgPointsToGCodeCoords(
-    paths: Point[][],
-    pipeOD: number,
-    axialOffset: number,
-    rotationDeg: number
-): GCodeCoord[][] {
+function svgPointsToGCodeCoords(paths: Point[][], pipeOD: number, axialOffset: number, rotationDeg: number): GCodeCoord[][] {
     const rotationRad = (rotationDeg * Math.PI) / 180;
 
     return paths.map((path) => {
@@ -143,6 +139,7 @@ function svgPointsToGCodeCoords(
 
 function getPaths(doc: Document): string[] {
     return Array.from(doc.querySelectorAll("path"))
+        .filter((p) => !p.closest("defs")) // ignore paths inside <defs>
         .map((p) => p.getAttribute("d"))
         .filter((d): d is string => !!d)
         .flatMap((d) => d.match(/[Mm][^Mm]*/g)?.map((s) => s.trim()) ?? []);
@@ -156,31 +153,16 @@ function getPaths(doc: Document): string[] {
  * @param svgRotation
  * @param samplingStepSize  How often we place a point along the SVG path
  */
-export function generateGCode(
-    svg: Document,
-    xStart: number,
-    svgScale: number,
-    rotation: number,
-    pipeOD: number,
-    svgRotation: number = 0,
-    samplingStepSize: number = .5,
-): { gcode: string; gcodeCoords: GCodeCoord[][] } {
+export function generateGCode(svg: Document, xStart: number, svgScale: number, rotation: number, pipeOD: number, svgRotation: number = 0, samplingStepSize: number = 0.5): { gcode: string; gcodeCoords: GCodeCoord[][] } {
     const rawPaths = sampleSvgPaths(svg);
 
     const rotatedPaths = rotatePaths(rawPaths, svgRotation);
 
     const normalizedPaths = normalizePoints(rotatedPaths, svgScale);
 
-    const resampledPaths = normalizedPaths.map((p) =>
-        resamplePath(p, samplingStepSize)
-    );
+    const resampledPaths = normalizedPaths.map((p) => resamplePath(p, samplingStepSize));
 
-    const gcodeCoords = svgPointsToGCodeCoords(
-        resampledPaths,
-        pipeOD,
-        xStart,
-        rotation
-    );
+    const gcodeCoords = svgPointsToGCodeCoords(resampledPaths, pipeOD, xStart, rotation);
 
     const gcode = [
         "COMP_RIGHT",
@@ -197,18 +179,29 @@ export function generateGCode(
         "",
         "TUV 0.00, 0.00 //no torch tilt (bevel)",
         "",
-        ...gcodeCoords.flatMap((cut) => [
-            "",
-            "TORCH_ON",
-            "",
-            ...cut.map(
-                (c) =>
-                    `G01 ${c.x.toFixed(7)}, ${c.y.toFixed(7)}, ${c.z.toFixed(7)}`
-            ),
-            "",
-            "TORCH_OFF",
-            "",
-        ]),
+
+        ...gcodeCoords.flatMap((cut, i) => {
+            const first = cut[0]!;
+            const coordToStr = (c: GCodeCoord) => `G01 ${c.x.toFixed(7)}, ${c.y.toFixed(7)}, ${c.z.toFixed(7)}`;
+
+            return [
+                // Travel to start of this cut (torch off)
+                ...(i > 0
+                    ? [
+                        "TORCH_OFF",
+                        "",
+                        coordToStr(first), // move to start position
+                        "",
+                    ]
+                    : []),
+                "TORCH_ON",
+                "",
+                ...cut.map(coordToStr),
+                "",
+            ];
+        }),
+        "TORCH_OFF",
+        "",
     ].join("\n");
 
     return { gcode, gcodeCoords };

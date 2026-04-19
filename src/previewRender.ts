@@ -94,37 +94,17 @@ function buildLine(
   return line;
 }
 
-function buildCutPath(coords: GCodeCoord[], radius: number): THREE.Object3D {
-  const group = new THREE.Group();
+function buildCutPath(coords: GCodeCoord[], radius: number): THREE.Line {
+  const points = coords.map((c) => projectOntoOD(c.x, c.y, c.z, radius));
+  return buildLine(points, 0x00eeff, false);
+}
 
-  const solidPoints: THREE.Vector3[] = [];
-  const tabPoints: THREE.Vector3[] = [];
-  let torchOn = true;
-
-  for (const c of coords) {
-    const pt = projectOntoOD(c.x, c.y, c.z, radius);
-
-    //TODO: add torchOn logic
-
-    if (torchOn) {
-      if (tabPoints.length >= 2) {
-        group.add(buildLine(tabPoints.slice(), 0xffaa00, true));
-        tabPoints.length = 0;
-      }
-      solidPoints.push(pt);
-    } else {
-      if (solidPoints.length >= 2) {
-        group.add(buildLine(solidPoints.slice(), 0x00eeff, false));
-        solidPoints.length = 0;
-      }
-      tabPoints.push(pt);
-    }
-  }
-
-  if (solidPoints.length >= 2) group.add(buildLine(solidPoints, 0x00eeff, false));
-  if (tabPoints.length >= 2) group.add(buildLine(tabPoints, 0xffaa00, true));
-
-  return group;
+function buildTransition(from: GCodeCoord, to: GCodeCoord, radius: number): THREE.Line {
+  const points = [
+    projectOntoOD(from.x, from.y, from.z, radius),
+    projectOntoOD(to.x, to.y, to.z, radius),
+  ];
+  return buildLine(points, 0xffaa00, true);
 }
 
 function frameCamera(xMin: number, xMax: number, radius: number) {
@@ -171,8 +151,14 @@ export function display(
 
   add(buildPipe(xMax - xMin, radius, xMin));
 
-  for (const cut of gcodeCoords) {
-    add(buildCutPath(cut, radius));
+  for (let i = 0; i < gcodeCoords.length; i++) {
+    add(buildCutPath(gcodeCoords[i]!, radius));
+
+    if (i < gcodeCoords.length - 1) {
+      const lastPoint = gcodeCoords[i]![gcodeCoords[i]!.length - 1]!;
+      const firstPoint = gcodeCoords[i + 1]![0]!;
+      add(buildTransition(lastPoint, firstPoint, radius));
+    }
   }
 
   frameCamera(xMin, xMax, radius);
