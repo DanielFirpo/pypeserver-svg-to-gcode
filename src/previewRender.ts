@@ -7,12 +7,7 @@ scene.background = new THREE.Color(0x1a1a2e);
 
 const container = document.getElementById("pipe-preview")!;
 
-const camera = new THREE.PerspectiveCamera(
-  55,
-  container.clientWidth / container.clientHeight,
-  0.1,
-  1000
-);
+const camera = new THREE.PerspectiveCamera(55, container.clientWidth / container.clientHeight, 0.1, 1000);
 
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(container.clientWidth, container.clientHeight);
@@ -54,12 +49,7 @@ function add(obj: THREE.Object3D) {
   return obj;
 }
 
-function projectOntoOD(
-  gcX: number,
-  gcY: number,
-  gcZ: number,
-  radius: number
-): THREE.Vector3 {
+function projectOntoOD(gcX: number, gcY: number, gcZ: number, radius: number): THREE.Vector3 {
   const len = Math.sqrt(gcY * gcY + gcZ * gcZ);
   const ny = len > 1e-9 ? gcY / len : 0;
   const nz = len > 1e-9 ? gcZ / len : 1;
@@ -80,15 +70,9 @@ function buildPipe(length: number, radius: number, xOffset: number): THREE.Mesh 
   return mesh;
 }
 
-function buildLine(
-  points: THREE.Vector3[],
-  color: number,
-  dashed: boolean
-): THREE.Line {
+function buildLine(points: THREE.Vector3[], color: number, dashed: boolean): THREE.Line {
   const geo = new THREE.BufferGeometry().setFromPoints(points);
-  const mat = dashed
-    ? new THREE.LineDashedMaterial({ color, dashSize: 0.05, gapSize: 0.05, linewidth: 2 })
-    : new THREE.LineBasicMaterial({ color, linewidth: 2 });
+  const mat = dashed ? new THREE.LineDashedMaterial({ color, dashSize: 0.05, gapSize: 0.05, linewidth: 2 }) : new THREE.LineBasicMaterial({ color, linewidth: 2 });
   const line = new THREE.Line(geo, mat);
   if (dashed) line.computeLineDistances();
   return line;
@@ -99,11 +83,8 @@ function buildCutPath(coords: GCodeCoord[], radius: number): THREE.Line {
   return buildLine(points, 0x00eeff, false);
 }
 
-function buildTransition(from: GCodeCoord, to: GCodeCoord, radius: number): THREE.Line {
-  const points = [
-    projectOntoOD(from.x, from.y, from.z, radius),
-    projectOntoOD(to.x, to.y, to.z, radius),
-  ];
+function buildTransition(coords: GCodeCoord[], radius: number): THREE.Line {
+  const points = coords.map((c) => projectOntoOD(c.x, c.y, c.z, radius));
   return buildLine(points, 0xffaa00, true);
 }
 
@@ -123,11 +104,8 @@ function animate() {
   renderer.render(scene, camera);
 }
 
-export function display(
-  gcodeCoords: GCodeCoord[][] | null,
-  pipeOD: number,
-  xStart: number
-): void {
+export function display(gcodeCoords: GCodeCoord[][] | null, gcodeTransitions: GCodeCoord[][], pipeOD: number, xStart: number): void {
+  console.log("display called with:", { pipeOD, xStart, cuts: gcodeCoords?.length });
   clearScene();
 
   if (!gcodeCoords || gcodeCoords.length === 0) {
@@ -154,10 +132,8 @@ export function display(
   for (let i = 0; i < gcodeCoords.length; i++) {
     add(buildCutPath(gcodeCoords[i]!, radius));
 
-    if (i < gcodeCoords.length - 1) {
-      const lastPoint = gcodeCoords[i]![gcodeCoords[i]!.length - 1]!;
-      const firstPoint = gcodeCoords[i + 1]![0]!;
-      add(buildTransition(lastPoint, firstPoint, radius));
+    if (gcodeTransitions[i]) {
+      add(buildTransition(gcodeTransitions[i]!, radius));
     }
   }
 

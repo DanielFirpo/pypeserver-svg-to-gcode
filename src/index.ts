@@ -2,16 +2,16 @@ import { generateGCode } from "./gcode";
 import "./styles.css";
 import { display } from "./previewRender";
 
-const svgInput = document.getElementById('svgFile') as HTMLInputElement;
-const button = document.getElementById('customText') as HTMLButtonElement;
-const fileNameText = document.getElementById('selectedFileName') as HTMLSpanElement;
-const previewImg = document.querySelector('img') as HTMLImageElement;
+const svgInput = document.getElementById("svgFile") as HTMLInputElement;
+const button = document.getElementById("customText") as HTMLButtonElement;
+const fileNameText = document.getElementById("selectedFileName") as HTMLSpanElement;
+const previewImg = document.querySelector("img") as HTMLImageElement;
 
-button.addEventListener('click', () => {
+button.addEventListener("click", () => {
   svgInput.click();
 });
 
-svgInput.addEventListener('change', () => {
+svgInput.addEventListener("change", () => {
   const file = svgInput.files?.[0];
 
   if (!file) return;
@@ -37,12 +37,8 @@ if (form) {
     const xStartInput = document.getElementById("xStart") as HTMLInputElement;
     const svgScaleInput = document.getElementById("svgScale") as HTMLInputElement;
     const rotationInput = document.getElementById("rotation") as HTMLInputElement;
-    const samplingResolutionInput = document.getElementById(
-      "samplingResolution"
-    ) as HTMLInputElement;
-    const svgRotationInput = document.getElementById(
-      "svgRotation"
-    ) as HTMLInputElement;
+    const samplingResolutionInput = document.getElementById("samplingResolution") as HTMLInputElement;
+    const svgRotationInput = document.getElementById("svgRotation") as HTMLInputElement;
 
     let svgFile = svgInput.files?.[0];
     const pipeOD = parseFloat(pipeODInput.value);
@@ -53,9 +49,9 @@ if (form) {
     const svgRotation = parseFloat(svgRotationInput.value);
 
     if (!svgFile) {
-      const response = await fetch('/pypeserver-svg-to-gcode/SVMLogo.svg');
+      const response = await fetch("/pypeserver-svg-to-gcode/SVMLogo.svg");
       const blob = await response.blob();
-      svgFile = new File([blob], 'default.svg', { type: 'image/svg+xml' });
+      svgFile = new File([blob], "default.svg", { type: "image/svg+xml" });
     }
 
     if (isNaN(pipeOD) || isNaN(xStart)) {
@@ -94,22 +90,14 @@ if (form) {
     const svgText = await readFileAsText(svgFile);
     const svg: Document = parseSvg(svgText);
 
-    const { gcode, gcodeCoords } = generateGCode(
-      svg,
-      xStart,
-      svgScale,
-      rotation,
-      pipeOD,
-      svgRotation,
-      samplingResolution
-    );
+    const { gcode, gcodeCoords, gcodeTransitions } = generateGCode(svg, xStart, svgScale, rotation, pipeOD, svgRotation, samplingResolution);
 
     console.log(gcode);
     const gcodeOutput = document.getElementById("gcode-output") as HTMLTextAreaElement | null;
     if (gcodeOutput) {
       gcodeOutput.value = gcode;
     }
-    display(gcodeCoords, pipeOD, xStart);
+    display(gcodeCoords, gcodeTransitions, pipeOD, xStart);
   });
 }
 
